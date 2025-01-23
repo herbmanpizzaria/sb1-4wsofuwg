@@ -8,9 +8,8 @@ interface Order {
   created_at: string;
   status: string;
   total_amount: number;
-  user: {
-    email: string;
-  };
+  user_id: string;
+  user_email: string;
   items: {
     product: {
       name: string;
@@ -52,7 +51,6 @@ export function StaffPanel() {
         .from('orders')
         .select(`
           *,
-          user:user_id(email),
           items:order_items(
             quantity,
             notes,
@@ -65,6 +63,12 @@ export function StaffPanel() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+
+      // Get the current user's email to identify staff status
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email?.endsWith('@pizzapalace.com')) {
+        throw new Error('Unauthorized access');
+      }
 
       setOrders(orders || []);
     } catch (error: any) {
@@ -125,7 +129,7 @@ export function StaffPanel() {
                         {new Date(order.created_at).toLocaleString()}
                       </p>
                       <p className="text-sm text-gray-500">
-                        Customer: {order.user.email}
+                        Customer ID: {order.user_id.slice(0, 8)}
                       </p>
                     </div>
                   </div>
